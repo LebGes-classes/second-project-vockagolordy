@@ -3,7 +3,7 @@ import java.util.*;
 public class WarehouseUnit {
     private List<Product> products;
     private boolean occupied;
-    final private int maxCapacity = 50;
+    final private int maxCapacity = 1000;
     private int currentCapacity = 0;
 
     public WarehouseUnit() {
@@ -16,9 +16,9 @@ public class WarehouseUnit {
         if (!this.isFull(product.getQuantity())) {
             for (Product existingProduct : products) {
                 if (existingProduct.getName().equals(product.getName())
-                    && existingProduct.getCategory().equals(product.getCategory())) {
+                        && existingProduct.getCategory().equals(product.getCategory())) {
                     existingProduct.setQuantity(existingProduct.getQuantity() + product.getQuantity());
-                    currentCapacity += products.size();
+                    currentCapacity += product.getQuantity();
                     occupied = true;
                     return true;
                 }
@@ -56,7 +56,7 @@ public class WarehouseUnit {
         return currentCapacity > maxCapacity;
     }
 
-    // проверка статуса ячейки (при поиске места для продукта новой категории или уже встречавшейся категории из переполненной клетки)
+    // проверка статуса ячейки (вспомогательный метод)
     public boolean isOccupied() {
         return occupied;
     }

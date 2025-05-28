@@ -4,12 +4,12 @@ public class Shop implements Storage {
     private static final int MAX_UNITS = 50;
     private List<WarehouseUnit> units;
     private String location;
-    private Set<String> availableCategories;
+    public Set<String> availableCategories;
     private String responsibleEmployee;
     private boolean isOpen;
     private double totalSales;
     private double totalReturns;
-    private Map<Customer, List<Product>> salesHistory; // Упрощенная история продаж
+    private Map<Customer, List<Product>> salesHistory;
 
     public Shop(String location, int unitCount, String responsibleEmployee) {
         if (unitCount > MAX_UNITS) {
@@ -29,32 +29,46 @@ public class Shop implements Storage {
         this.salesHistory = new HashMap<>();
     }
 
-    // получение списка юнитов
+    // геттеры
+    public int getOccupiedUnits() {
+        return (int) units.stream().filter(WarehouseUnit::isOccupied).count();
+    }
     public List<WarehouseUnit> getUnits() {
         return units;
     }
+    public boolean isOpen() {
+        return isOpen;
+    }
+    @Override
+    public String getLocation() {
+        return location;
+    }
+    @Override
+    public void setLocation(String location) {
+        this.location = location;
+    }
+    @Override
+    public String[] getAvailableCategories() {
+        return availableCategories.toArray(new String[0]);
+    }
 
-    // Смена ответственного лица
+    // смена ответственного лица
     public void changeResponsibleEmployee(String newEmployee) {
         this.responsibleEmployee = newEmployee;
         System.out.println("Responsible employee changed to: " + newEmployee);
     }
 
-    // Управление статусом магазина
+    // управление статусом магазина
     public void openShop() {
         isOpen = true;
         System.out.println("Shop at " + location + " is now open");
     }
-
     public void closeShop() {
         isOpen = false;
         System.out.println("Shop at " + location + " is now closed");
     }
 
-    public boolean isOpen() {
-        return isOpen;
-    }
-
+    // обработать покупку
     public boolean processPurchase(Customer customer, String productName, int quantity) {
         if (!isOpen) return false;
 
@@ -69,7 +83,6 @@ public class Shop implements Storage {
                             quantity
                     );
 
-                    // Обновляем склад
                     product.setQuantity(product.getQuantity() - quantity);
                     if (product.getQuantity() == 0) {
                         unit.getProducts().remove(product);
@@ -78,7 +91,6 @@ public class Shop implements Storage {
                         }
                     }
 
-                    // Обновляем статистику
                     double saleAmount = quantity * product.price;
                     totalSales += saleAmount;
                     salesHistory.computeIfAbsent(customer, k -> new ArrayList<>()).add(soldProduct);
@@ -90,7 +102,7 @@ public class Shop implements Storage {
         return false;
     }
 
-    // Новый метод для обработки возврата
+    // обработать возврат без корректировки total sales
     public boolean processReturn(Customer customer, String productName, int quantity) {
         if (!isOpen) return false;
 
@@ -117,7 +129,7 @@ public class Shop implements Storage {
         return false;
     }
 
-    // Остальные методы остаются без изменений
+    // вывод финансовой информации пункта продаж
     public void showFinancialInfo() {
         System.out.println("=== Financial Information ===");
         System.out.println("Total sales: " + totalSales);
@@ -126,6 +138,7 @@ public class Shop implements Storage {
         System.out.println("============================");
     }
 
+    // вывод полной информации о пункте продаж
     public void showShopInfo() {
         System.out.println("=== Shop Information ===");
         System.out.println("Location: " + location);
@@ -137,10 +150,7 @@ public class Shop implements Storage {
         showFinancialInfo();
     }
 
-    public int getOccupiedUnits() {
-        return (int) units.stream().filter(WarehouseUnit::isOccupied).count();
-    }
-
+    // добавить продукт в юнит пункта продаж
     public boolean addProduct(Product product) {
         if (!availableCategories.contains(product.getCategory())) {
             System.out.println("Category " + product.getCategory() + " is not available in this shop");
@@ -170,6 +180,7 @@ public class Shop implements Storage {
         return false;
     }
 
+    // метод для сокращения кода, применяется при покупке и продаже
     public double findProductPrice(String productName) {
         for (WarehouseUnit unit : units) {
             for (Product p : unit.getProducts()) {
@@ -181,26 +192,29 @@ public class Shop implements Storage {
         return 0;
     }
 
-    @Override
-    public String getLocation() {
-        return location;
+    // вывод доступных товаров
+    public void displayAvailableProducts() {
+        System.out.println("\nAvailable Products at " + location + ":");
+        if (units.stream().noneMatch(unit -> unit.isOccupied() && !unit.getProducts().isEmpty())) {
+            System.out.println("No products available in this shop.");
+            return;
+        }
+
+        units.stream()
+                .filter(WarehouseUnit::isOccupied)
+                .flatMap(unit -> unit.getProducts().stream())
+                .forEach(product -> System.out.printf(
+                        "- %s (%s) | Price: %.2f | Quantity: %d%n",
+                        product.getName(), product.getCategory(),
+                        product.price, product.getQuantity()
+                ));
     }
 
-    @Override
-    public void setLocation(String location) {
-        this.location = location;
-    }
-
-    @Override
-    public String[] getAvailableCategories() {
-        return availableCategories.toArray(new String[0]);
-    }
-
+    // изменение категорий доступных в пункте продаж
     @Override
     public void newAvailableCategory(String category) {
         availableCategories.add(category);
     }
-
     @Override
     public void newUnavailableCategory(String category) {
         availableCategories.remove(category);

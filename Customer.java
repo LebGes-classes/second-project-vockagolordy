@@ -5,9 +5,9 @@ class Customer implements User {
     private String id;
     private String contact;
     private String location;
-    private Map<String, Product> purchases; // Ключ: "категория|название", значение: продукт
+    private Map<String, Product> purchases; // "категория|название" : продукт
     private double totalSpent;
-    private Shop shop; // Ссылка на магазин
+    private Shop shop;
 
     public Customer(String name, String id, String contact, String location, Shop shop) {
         this.name = name;
@@ -19,7 +19,7 @@ class Customer implements User {
         this.shop = shop;
     }
 
-    // Основные геттеры
+    // геттеры
     @Override
     public String getName() {
         return name;
@@ -46,24 +46,23 @@ class Customer implements User {
         return totalSpent;
     }
 
+    // покупка
     public boolean buyProduct(String productName, int quantity) {
         if (!shop.isOpen()) {
-            System.out.println("Магазин закрыт");
+            System.out.println("Shop is closed");
             return false;
         }
 
         if (!shop.processPurchase(this, productName, quantity)) {
-            System.out.println("Не удалось купить товар");
+            System.out.println("Failed to process a purchase");
             return false;
         }
 
-        // Обновляем список покупок покупателя
         String key = findProductKey(productName);
         if (key != null) {
             Product existing = purchases.get(key);
             existing.setQuantity(existing.getQuantity() + quantity);
         } else {
-            // Находим информацию о товаре для создания записи
             for (WarehouseUnit unit : shop.getUnits()) {
                 for (Product p : unit.getProducts()) {
                     if (p.getName().equals(productName)) {
@@ -81,10 +80,11 @@ class Customer implements User {
         return true;
     }
 
+    // возврат
     public boolean returnProduct(String productName, int quantity) {
         String key = findProductKey(productName);
         if (key == null || purchases.get(key).getQuantity() < quantity) {
-            System.out.println("Нельзя вернуть товар");
+            System.out.println("Product is non-returnable");
             return false;
         }
 
@@ -93,7 +93,6 @@ class Customer implements User {
             return false;
         }
 
-        // Обновляем список покупок
         Product customerProduct = purchases.get(key);
         if (customerProduct.getQuantity() > quantity) {
             customerProduct.setQuantity(customerProduct.getQuantity() - quantity);
@@ -114,31 +113,31 @@ class Customer implements User {
         return null;
     }
 
-    // Просмотр текущих покупок
+    // список покупок
     public void showPurchases() {
-        System.out.println("=== Ваши покупки (" + name + ") ===");
+        System.out.println("=== Purchases (" + name + ") ===");
         if (purchases.isEmpty()) {
-            System.out.println("У вас пока нет покупок");
+            System.out.println("You have not bought anything yet");
         } else {
             purchases.values().forEach(item ->
-                    System.out.printf("- %s (%s) | Кол-во: %d | Цена: %.2f%n",
+                    System.out.printf("- %s (%s) | Amount: %d | Price: %.2f%n",
                             item.getName(), item.getCategory(), item.getQuantity(), item.price)
             );
-            System.out.println("Общая сумма: " + totalSpent);
+            System.out.println("Your total is " + totalSpent);
         }
         System.out.println("=============================");
     }
 
-    // Обновление контактной информации
+    // изменить контактные данные
     public void updateContact(String newContact) {
         this.contact = newContact;
-        System.out.println("Контактная информация обновлена");
+        System.out.println("Contact information was updated");
     }
 
-    // Обновление локации
+    // изменить локацию
     public void updateLocation(String newLocation) {
         this.location = newLocation;
-        System.out.println("Локация обновлена");
+        System.out.println("Location was updated");
     }
 
 }

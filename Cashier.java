@@ -15,7 +15,7 @@ class Cashier implements Worker {
         this.id = id;
         this.contact = contact;
         this.position = position;
-        this.employed = true; // по умолчанию нанят
+        this.employed = true; // работник нанят по умолчанию
         this.salesVolume = 0;
         this.soldProducts = new ArrayList<>();
         this.workplace = workplace;
@@ -38,28 +38,29 @@ class Cashier implements Worker {
     public String getLocation() {
         return workplace.getLocation();
     }
+    public Shop getWorkplace() {
+        return workplace;
+    }
     public String getPosition() {
         return position;
     }
-
     @Override
     public boolean isEmployed() {
         return employed;
     }
-
     public double getSalesVolume() {
         return salesVolume;
     }
 
+    // продать товар
     public boolean sellProduct(Customer customer, String productName, int quantity) {
         if (!workplace.isOpen()) {
-            System.out.println("Магазин закрыт");
+            System.out.println("Store is closed");
             return false;
         }
 
         boolean success = workplace.processPurchase(customer, productName, quantity);
         if (success) {
-            // продукт для добавления в список продаж кассира
             for (WarehouseUnit unit : workplace.getUnits()) {
                 for (Product p : unit.getProducts()) {
                     if (p.getName().equals(productName)) {
@@ -76,48 +77,50 @@ class Cashier implements Worker {
         return success;
     }
 
-    // возврат товара
+    // принять товар на возврат
     public boolean processReturn(Customer customer, String productName, int quantity) {
         if (!workplace.isOpen()) {
-            System.out.println("Магазин закрыт");
+            System.out.println("Shop is closed");
             return false;
         }
 
         boolean success = workplace.processReturn(customer, productName, quantity);
         if (success) {
-            // Обновляем статистику кассира
+            // обновить статистику
             salesVolume -= workplace.findProductPrice(productName) * quantity;
-            // Удаляем из списка продаж (упрощенная логика)
             soldProducts.removeIf(p -> p.getName().equals(productName));
         }
         return success;
     }
 
-    // Просмотр продаж кассира
+    // показать информацию о работнике
     public void showSalesInfo() {
-        System.out.println("=== Информация о продажах кассира " + name + " ===");
-        System.out.println("Должность: " + position);
-        System.out.println("Общий объем продаж: " + salesVolume);
-        System.out.println("Количество проданных товаров: " + soldProducts.size());
-        System.out.println("Список проданных товаров:");
+        System.out.println("=== Sales Information for Cashier " + name + " ===");
+        System.out.println("Position: " + position);
+        System.out.println("Total sales volume: " + salesVolume);
+        System.out.println("Number of products sold: " + soldProducts.size());
+        System.out.println("List of sold products:");
         soldProducts.forEach(p ->
-                System.out.printf("- %s (Категория: %s, Кол-во: %d, Цена: %.2f)%n",
+                System.out.printf("- %s (Category: %s, Quantity: %d, Price: %.2f)%n",
                         p.getName(), p.getCategory(), p.getQuantity(), p.price)
         );
         System.out.println("==============================");
     }
 
-    // Другие методы
+    // возможность сделать из кассира мега-кассира, но не менеджера
     public void setPosition(String newPosition) {
         this.position = newPosition;
     }
 
+    // установить статус работника (для сериализации)
+    public void setEmployed(boolean status){
+        this.employed = status;
+    }
+
+    // увольнение
     public void dismiss() {
         this.employed = false;
         this.workplace = null;
     }
 
-    public Shop getWorkplace() {
-        return workplace;
-    }
 }

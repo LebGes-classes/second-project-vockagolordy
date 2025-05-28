@@ -3,7 +3,8 @@ import java.util.*;
 public class Warehouse implements Storage {
     private List<WarehouseUnit> units;
     private String location;
-    private Set<String> availableCategories;
+    public Set<String> availableCategories;
+    private String responsibleEmployee;
 
     public Warehouse(String location, int unitCount) {
         this.location = location;
@@ -14,47 +15,44 @@ public class Warehouse implements Storage {
         this.availableCategories = new HashSet<>();
     }
 
+    // геттеры сеттеры
     @Override
     public String getLocation() {
         return location;
     }
-
     @Override
     public void setLocation(String location) {
         this.location = location;
     }
-
     @Override
     public String[] getAvailableCategories() {
         return availableCategories.toArray(new String[0]);
     }
+    public int getTotalUnits() {
+        return units.size();
+    }
+    public List<WarehouseUnit> getUnits(){
+        return this.units;
+    }
+    public int getOccupiedUnits() {
+        return (int) units.stream().filter(WarehouseUnit::isOccupied).count();
+    }
+    public int getEmptyUnits() {
+        return getTotalUnits() - getOccupiedUnits();
+    }
 
+
+    // изменение категорий товаров доступных на складе
     @Override
     public void newAvailableCategory(String category) {
         availableCategories.add(category);
     }
-
     @Override
     public void newUnavailableCategory(String category) {
         availableCategories.remove(category);
     }
 
-    // общее количество €чеек
-    public int getTotalUnits() {
-        return units.size();
-    }
-
-    // количество заполненных €чеек
-    public int getOccupiedUnits() {
-        return (int) units.stream().filter(WarehouseUnit::isOccupied).count();
-    }
-
-    // количество пустых €чеек
-    public int getEmptyUnits() {
-        return getTotalUnits() - getOccupiedUnits();
-    }
-
-    // ѕолучить информацию о товарах на складе
+    // получить информацию о товарах на складе
     public void showWarehouseInfo() {
         System.out.println("=== Warehouse Information ===");
         System.out.println("Location: " + location);
@@ -65,7 +63,7 @@ public class Warehouse implements Storage {
         System.out.println("=============================");
     }
 
-    // ѕеремещение €чейки между складами
+    // перемещение €чейки между складами
     public boolean moveUnitTo(Warehouse targetWarehouse, int unitIndex) {
         if (unitIndex < 0 || unitIndex >= units.size()) {
             System.out.println("Invalid unit index");
@@ -78,21 +76,17 @@ public class Warehouse implements Storage {
             return false;
         }
 
-        // ѕровер€ем, есть ли место в целевом складе
         if (targetWarehouse.getEmptyUnits() > 0) {
-            // Ќаходим первую пустую €чейку в целевом складе
             Optional<WarehouseUnit> emptyUnit = targetWarehouse.units.stream()
                     .filter(u -> !u.isOccupied()).findFirst();
 
             if (emptyUnit.isPresent()) {
-                // ѕеремещаем все продукты
                 for (Product product : unitToMove.getProducts()) {
                     if (!emptyUnit.get().addProduct(product)) {
                         System.out.println("Failed to move products");
                         return false;
                     }
                 }
-                // ќчищаем исходную €чейку
                 unitToMove.getProducts().clear();
                 unitToMove.resetOccupied();
                 return true;
@@ -102,15 +96,13 @@ public class Warehouse implements Storage {
         return false;
     }
 
-    // ƒобавить продукт на склад (находит подход€щую €чейку)
+    // добавить продукт на склад (находит подход€щую €чейку)
     public boolean addProduct(Product product) {
-        // ѕровер€ем доступность категории
         if (!availableCategories.contains(product.getCategory())) {
             System.out.println("Category " + product.getCategory() + " is not available for purchase");
             return false;
         }
 
-        // —начала пытаемс€ найти €чейку с таким же продуктом
         for (WarehouseUnit unit : units) {
             if (unit.isOccupied()) {
                 for (Product item : unit.getProducts()) {
@@ -124,7 +116,6 @@ public class Warehouse implements Storage {
             }
         }
 
-        // ≈сли не нашли, ищем пустую €чейку
         for (WarehouseUnit unit : units) {
             if (!unit.isOccupied()) {
                 if (unit.addProduct(product)) {

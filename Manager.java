@@ -13,7 +13,7 @@ class Manager implements Worker {
         this.id = id;
         this.contact = contact;
         this.location = location;
-        this.employed = true;
+        this.employed = true; // по умолчанию нанят
         this.workplace = shop;
     }
 
@@ -22,67 +22,60 @@ class Manager implements Worker {
     public String getName() {
         return name;
     }
-
     @Override
     public String getID() {
         return id;
     }
-
     @Override
     public String getContact() {
         return contact;
     }
-
     @Override
     public String getLocation() {
         return location;
     }
-
     @Override
     public String getPosition() {
         return "Manager";
     }
-
     public Shop getWorkplace() {
         return workplace;
     }
-
     @Override
     public boolean isEmployed() {
         return employed;
     }
 
-    // Управление персоналом
+    // управление персоналом
     public boolean hireCashier(Cashier cashier) {
         if (!employed) {
-            System.out.println("Менеджер не работает в магазине");
+            System.out.println("This manager can not hire workers");
             return false;
         }
 
         if (workplace != null) {
-            cashier.setPosition("Кассир");
-            System.out.println("Новый кассир " + cashier.getName() + " нанят");
+            cashier.setPosition("Cashier");
+            System.out.println("New cashier " + cashier.getName() + " is hired");
             return true;
         }
         return false;
     }
-
     public boolean fireWorker(Worker worker) {
         if (!employed) {
-            System.out.println("Менеджер не работает в магазине");
+            System.out.println("This manager can not fire workers");
             return false;
         }
 
         if (worker instanceof Cashier) {
             ((Cashier) worker).dismiss();
-            System.out.println("Кассир " + worker.getName() + " уволен");
+            System.out.println("Cashier " + worker.getName() + " is fired");
             return true;
         }
-        System.out.println("Можно уволить только кассиров");
+        System.out.println("Can not fire this worker");
         return false;
     }
 
-    // Управление магазином
+    // открытие закрытие магазина
     public void changeShopStatus(boolean open) {
         if (open) {
             workplace.openShop();
@@ -91,17 +84,84 @@ class Manager implements Worker {
         }
     }
 
+    // закупка товаров со склада в пункт продаж
+    public boolean purchaseFromWarehouse(Warehouse warehouse, String productName, int quantity) {
+        if (!isEmployed()) {
+            System.out.println("Manager is not employed");
+            return false;
+        }
+
+        if (!workplace.isOpen()) {
+            System.out.println("Shop is closed");
+            return false;
+        }
+
+        // ищем товар на складе
+        Product warehouseProduct = null;
+        for (WarehouseUnit unit : warehouse.getUnits()) {
+            for (Product product : unit.getProducts()) {
+                if (product.getName().equals(productName)) {
+                    warehouseProduct = product;
+                    break;
+                }
+            }
+            if (warehouseProduct != null) break;
+        }
+
+        if (warehouseProduct == null) {
+            System.out.println("Product not found in warehouse");
+            return false;
+        }
+
+        if (warehouseProduct.getQuantity() < quantity) {
+            System.out.println("Not enough quantity in warehouse");
+            return false;
+        }
+
+        // создаем продукт для магазина
+        Product shopProduct = new Product(
+                warehouseProduct.getCategory(),
+                warehouseProduct.getName(),
+                warehouseProduct.getInfo(),
+                warehouseProduct.price,
+                quantity
+        );
+
+        // пытаемся добавить в магазин
+        if (!workplace.addProduct(shopProduct)) {
+            System.out.println("No space in shop");
+            return false;
+        }
+
+        // уменьшаем количество на складе
+        warehouseProduct.setQuantity(warehouseProduct.getQuantity() - quantity);
+        if (warehouseProduct.getQuantity() == 0) {
+            for (WarehouseUnit unit : warehouse.getUnits()) {
+                if (unit.getProducts().remove(warehouseProduct)) {
+                    if (unit.getProducts().isEmpty()) {
+                        unit.resetOccupied();
+                    }
+                    break;
+                }
+            }
+        }
+
+        System.out.println("Successfully purchased " + quantity + " of " + productName + " from warehouse");
+        return true;
+    }
+
+    // изменить ответственного работника
     public void changeResponsibleEmployee(String employeeName) {
         workplace.changeResponsibleEmployee(employeeName);
     }
 
-    // Управление товарами
+    // добавить товар в магазин
     public boolean addProductToShop(Product product) {
         return workplace.addProduct(product);
     }
 
+    // удалить товар из магазина
     public boolean removeProductFromShop(String productName, int quantity) {
-        // Поиск и удаление товара
         for (WarehouseUnit unit : workplace.getUnits()) {
             Iterator<Product> iterator = unit.getProducts().iterator();
             while (iterator.hasNext()) {
@@ -123,40 +183,40 @@ class Manager implements Worker {
         return false;
     }
 
-    // Управление категориями
+    // управление категориями
     public void addCategory(String category) {
         workplace.newAvailableCategory(category);
-        System.out.println("Категория " + category + " добавлена");
+        System.out.println("Category " + category + " is added");
     }
-
     public void removeCategory(String category) {
         workplace.newUnavailableCategory(category);
-        System.out.println("Категория " + category + " удалена");
+        System.out.println("Category " + category + " is deleted");
     }
 
-    // Просмотр информации
+    // просмотр информации
     public void showFullShopInfo() {
-        System.out.println("=== Полная информация о магазине ===");
+        System.out.println("=== Full information about shop ===");
         workplace.showShopInfo();
         System.out.println("================================");
     }
 
+    // просмотр финансового отчета
     public void showFinancialReport() {
-        System.out.println("=== Финансовый отчет ===");
+        System.out.println("=== Financial report ===");
         workplace.showFinancialInfo();
         System.out.println("========================");
     }
 
-    // Административные функции
+    // изменить локацию
     public void updateShopLocation(String newLocation) {
         workplace.setLocation(newLocation);
-        System.out.println("Локация магазина обновлена: " + newLocation);
+        System.out.println("Shops location is updated: " + newLocation);
     }
 
-    // Обновление информации о себе
+    // изменение информации о менеджере магазина
     public void updateManagerInfo(String newName, String newContact) {
         this.name = newName;
         this.contact = newContact;
-        System.out.println("Информация о менеджере обновлена");
+        System.out.println("Manager information is updated");
     }
 }
